@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>지뢰찾기</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: rgb(58, 58, 58);
+        }
+
+        table {
+            border-collapse: collapse;
+            font-size: large;
+            font-weight: bold;
+        }
+
+        td {
+            text-align: center;
+            line-height: 20px;
+            width: 20px;
+            height: 20px;
+            background: #aad751;
+        }
+
+        tr:nth-child(odd) td:nth-child(odd) {
+            text-align: center;
+            line-height: 20px;
+            width: 20px;
+            height: 20px;
+            background: #a2d149;
+        }
+
+        tr:nth-child(even) td:nth-child(even) {
+            text-align: center;
+            line-height: 20px;
+            width: 20px;
+            height: 20px;
+            background: #a2d149;
+        }
+
+        td.opened {
+            background: #d7b899;
+        }
+
+        tr:nth-child(odd) td:nth-child(odd).opened {
+            text-align: center;
+            line-height: 20px;
+            width: 20px;
+            height: 20px;
+            background: #e5c29f;
+
+        }
+
+        tr:nth-child(even) td:nth-child(even).opened {
+            text-align: center;
+            line-height: 20px;
+            width: 20px;
+            height: 20px;
+            background: #e5c29f;
+        }
+
+        #form {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        #row,
+        #cell,
+        #mine {
+            width: 60px;
+            height: 20px;
+            margin: 0;
+            padding: 0;
+            border: none;
+            background-color: rgba(255, 255, 255, 0.2);
+            margin-right: 1.618px;
+            font-weight: bold;
+            text-align: center;
+            margin-left: 1.618px;
+        }
+
+        #row::placeholder,
+        #cell::placeholder,
+        #mine::placeholder {
+            color: white;
+            font-size: 8px;
+            text-align: center;
+        }
+
+        #row {
+            border-top-left-radius: 20px;
+
+        }
+
+        #btn {
+            width: 60px;
+            height: 20px;
+            margin: 0;
+            padding: 0;
+            border: none;
+            background-color: rgba(0, 0, 0, 0.2);
+            margin-right: 1.618px;
+            margin-left: 1.618px;
+            text-align: center;
+            color: white;
+            font-size: 8px;
+            border-top-right-radius: 20px;
+            font-weight: bold;
+
+        }
+
+        #timer {
+            color: white;
+        }
+    </style>
+
+</head>
+
+<body>
+    <form id="form">
+        <input placeholder="Width" id="row" size="5" />
+        <input placeholder="Height" id="cell" size="5" />
+        <input placeholder="Mine" id="mine" size="5" />
+        <button id="btn">Create</button>
+    </form>
+    <table id="table">
+        <tbody></tbody>
+    </table>
+    <div id="timer"></div>
+    <div id="result"></div>
+    <script>
+        const $form = document.querySelector('#form');
+        const $tbody = document.querySelector('#table tbody');
+        const $result = document.querySelector('#result');
+        const $timer = document.querySelector('#timer');
+        const colors = [
+            '#00D7FF',
+            '#00E1FF',
+            '#00EBFF',
+            '#00F5FF',
+            '#00FFFF',
+            '#93DAFF',
+            '#98DFFF',
+            '#9DE4FF',
+            '#A2E9FF',
+            '#A7EEFF',
+            '#00BFFF',
+        ]
+        let row
+        let cell
+        let starttime
+        let mine
+        const CODE = {
+            NORMAL: -1,
+            QUESTION: -2,
+            FLAG: -3,
+            QUESTIONMINE: -4,
+            FLAGMINE: -5,
+            MINE: -6,
+            OPENED: 0,
+        }
+        let data;
+        let shuffle = []
+        function plantMine() {
+            const candidate = Array(row * cell).fill().map((e, i) => i)// 지뢰 생성할 랜덤 배열 생성
+            for (let i = 0; i < mine; i++) {
+                randomvalue = Math.floor(Math.random() * candidate.length);
+                shuffle.push(candidate.splice(randomvalue, 1)[0])// 지뢰 인덱스 생성
+            }
+            //전체 배열 생성
+            data = []
+            for (let k = 0; k < row; k++) {
+                const rowarr = []
+                data.push(rowarr)
+                for (let j = 0; j < cell; j++) {
+                    rowarr.push(CODE.NORMAL)
+                }
+            }
+            //지뢰 매설
+            //[3,2]
+            console.log(shuffle)
+            for (m = 0; m < shuffle.length; m++) {
+                const mineRow = Math.floor(shuffle[m] / (cell))
+                const mineCell = shuffle[m] % (row)
+                data[mineRow][mineCell] = CODE.MINE
+                console.log(` row : ${mineRow}  cell :${mineCell}`)
+            }
+            return data
+        }
+        function countfunc(rowIndex, cellIndex) {//주변 지뢰 카운트
+            //1,2,3
+            //4,5,6
+            //7,8,9
+            const mines = [CODE.FLAGMINE, CODE.MINE, CODE.QUESTIONMINE];
+            let i = 0;
+            mines.includes(data[rowIndex - 1]?.[cellIndex - 1]) && i++
+            // if (data[rowIndex - 1]) {
+            //     mines.includes(data[rowIndex - 1][cellIndex - 1])
+            // } 와 같음.
+
+            //mines.includes(data[rowindex-1] && data[rowindex-1][cellindex-1])&& i++ 와도 같음
+
+            mines.includes(data[rowIndex - 1]?.[cellIndex]) && i++
+            mines.includes(data[rowIndex - 1]?.[cellIndex + 1]) && i++
+            //-1row
+            mines.includes(data[rowIndex][cellIndex - 1]) && i++
+            mines.includes(data[rowIndex][cellIndex + 1]) && i++
+            // 0row
+            mines.includes(data[rowIndex + 1]?.[cellIndex - 1]) && i++
+            mines.includes(data[rowIndex + 1]?.[cellIndex]) && i++
+            mines.includes(data[rowIndex + 1]?.[cellIndex + 1]) && i++
+            return i
+            //1row
+        }
+        function findMine() {
+            data.forEach((row, rowindex) => {
+                row.forEach((cell, cellindex) => {
+                    if (cell === CODE.MINE || cell === CODE.QUESTIONMINE) {
+                        $tbody.children[rowindex].children[cellindex].style.fontSize = '15px'
+                        let randomColor = Math.floor(Math.random() * colors.length)
+                        $tbody.children[rowindex].children[cellindex].style.backgroundColor = colors[randomColor]
+                        return $tbody.children[rowindex].children[cellindex].textContent = '💣'
+
+                    }
+                    else if (cell === CODE.FLAGMINE) {
+                        return $tbody.children[rowindex].children[cellindex].textContent = '!'
+                    }
+                })
+            })
+        }
+        function gameover(target) {
+            target.textContent = '💣'
+            findMine()
+            clearInterval(intervalId);
+            $tbody.removeEventListener('contextmenu', rightclickfunc)
+            $tbody.removeEventListener('click', leftclickfunc)
+        }
+        function open(rowIndex, cellIndex) {
+            const target = $tbody.children[rowIndex]?.children[cellIndex]
+            if (data[rowIndex]?.[cellIndex] >= 0) {
+                return
+            }
+            if (!target) {
+                return
+            }
+            wincount++
+            const count = countfunc(rowIndex, cellIndex);
+            target.textContent = count || '';
+            if (count === 1) {
+                target.style.color = '#d32f2f'
+            } else if (count === 1) {
+                target.style.color = '#FF5675'
+            } else if (count === 2) {
+                target.style.color = '#FF46C5'
+            } else if (count === 3) {
+                target.style.color = '#AAEBAA'
+            } else if (count === 4) {
+                target.style.color = '#40A940'
+            } else if (count === 5) {
+                target.style.color = '#1EAAAA'
+            } else if (count === 6) {
+                target.style.color = '#00D7FF'
+            } else if (count === 7) {
+                target.style.color = '#228B22'
+            } else if (count === 8) {
+                target.style.color = '#63CC63'
+            }
+            //count가 없으면 빈칸 출력
+            target.className = 'opened'
+            data[rowIndex][cellIndex] = count;
+            return count
+        }
+        let wincount = 0;
+        let finishTime
+        function openAround(rowIndex, cellIndex) {
+            const count = open(rowIndex, cellIndex)
+            if (wincount === (row * cell - mine)) {
+                finishTime = Date.now()
+                clearInterval(intervalId)
+                $tbody.removeEventListener('contextmenu', rightclickfunc)
+                $tbody.removeEventListener('click', leftclickfunc)
+                console.log(finishTime)
+                console.log(starttime)
+                setTimeout(() => {
+                    alert(`win! ${(parseInt(finishTime) - parseInt(starttime)) / 1000}sec used`)
+                }, 500);
+            }
+            //재귀최적화 필요
+            if (count === 0) {
+                setTimeout(() => {
+                    openAround(rowIndex - 1, cellIndex - 1)
+                    openAround(rowIndex - 1, cellIndex)
+                    openAround(rowIndex - 1, cellIndex + 1)
+                    openAround(rowIndex, cellIndex - 1)
+                    openAround(rowIndex, cellIndex + 1)
+                    openAround(rowIndex + 1, cellIndex - 1)
+                    openAround(rowIndex + 1, cellIndex)
+                    openAround(rowIndex + 1, cellIndex + 1)
+                }, 0);
+                //재귀로 인해 Maximum call stack size exceeded 발생. 호출 스택을 백그라운드와 태스크 큐에 분산해서 저장
+
+            }
+        }
+        function leftclickfunc(event) {
+            const target = event.target
+            const rowIndex = target.parentNode.rowIndex;
+            const cellIndex = target.cellIndex;
+            const targetCell = data[rowIndex][cellIndex]
+
+            if (targetCell === CODE.NORMAL) {//만약 닫힌 칸이라면
+                openAround(rowIndex, cellIndex)
+            } else if (targetCell === CODE.MINE) {
+                //붐
+                //1,2,3
+                //4,5,6
+                //7,8,9
+                gameover(target)
+                //지뢰칸이라면
+            }
+            firstclick = 0;
+        }
+        function rightclickfunc(event) {
+            event.preventDefault()
+            //셀 데이터 타겟화
+            const target = event.target
+            const rowIndex = target.parentNode.rowIndex;
+            const cellIndex = target.cellIndex;
+            //html의 요소로 접근가능
+            const targetCell = data[rowIndex][cellIndex]
+            //지뢰가 없다면?
+            if (targetCell === CODE.FLAG) {//깃발인가?
+                data[rowIndex][cellIndex] = CODE.QUESTION // 물음표로
+                target.className = 'question'
+                target.textContent = '?'
+            }
+            if (targetCell === CODE.QUESTION) {//물음표인가?
+                data[rowIndex][cellIndex] = CODE.NORMAL //물음표 제거
+                target.className = ''
+                target.textContent = ''
+            }
+            if (targetCell === CODE.NORMAL) {//아무것도 없나?
+                data[rowIndex][cellIndex] = CODE.FLAG //깃발표시
+                target.className = 'flag'
+                target.textContent = '🚩'
+                target.style.fontSize = '15px'
+            }
+            //지뢰라면?
+            if (targetCell === CODE.FLAGMINE) {//깃발인가?
+                data[rowIndex][cellIndex] = CODE.QUESTIONMINE // 물음표로
+                target.className = 'question'
+                target.textContent = '?'
+            }
+            if (targetCell === CODE.QUESTIONMINE) {//물음표인가?
+                data[rowIndex][cellIndex] = CODE.MINE //물음표 제거
+                target.className = ''
+                target.textContent = ''
+            }
+            if (targetCell === CODE.MINE) {//아무것도 없나?
+                data[rowIndex][cellIndex] = CODE.FLAGMINE //깃발표시
+                target.className = 'flag'
+                target.textContent = '🚩'
+                target.style.fontSize = '15px'
+            }
+
+
+        }
+
+        function drawTable() {
+            data = plantMine()
+            data.forEach(row => {
+                const $tr = document.createElement('tr')
+                row.forEach(cell => {
+                    const $td = document.createElement('td')
+                    $tr.append($td)
+                    if (cell === CODE.MINE) {
+                        $td.textContent = ''
+                    }
+                })
+                $tbody.append($tr)
+                $tbody.addEventListener('contextmenu', rightclickfunc)
+                $tbody.addEventListener('click', leftclickfunc)
+            });
+        }
+
+        let intervalId
+        let countTime = 0;
+
+        function gamestart(event) {
+            event.preventDefault();
+
+            row = parseInt(event.target.row.value)
+            cell = parseInt(event.target.cell.value)
+            mine = parseInt(event.target.mine.value)
+            $tbody.innerHTML = ''
+            shuffle = []
+            wincount = 0;
+            starttime = Date.now()
+            countTime = 0;
+            intervalId = setInterval(() => {
+                countTime++
+                $timer.textContent = `${countTime} sec`
+            }, 1000);
+            drawTable()
+        }
+        $form.addEventListener('submit', gamestart)
+    </script>
+
+</body>
+
+</html>
